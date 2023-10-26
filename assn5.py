@@ -78,8 +78,33 @@ plt.axis("off")
 plt.title("H")
 plt.tight_layout()
 
-# PROBLEM 1 QUESTION 3
+# PROBLEM 1 QUESTION 2A - compare "open close" and "close open" with a radius of 5
+radius = 5
+diskSE = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2*radius+1, 2*radius+1))
+    
+# Open-Close operation
+openDowelsIm = cv2.morphologyEx(dowelsIm, cv2.MORPH_OPEN, diskSE)
+openCloseOutput = cv2.morphologyEx(openDowelsIm, cv2.MORPH_CLOSE, diskSE)
 
+# Close-Open operation
+closeDowelsIm = cv2.morphologyEx(dowelsIm, cv2.MORPH_CLOSE, diskSE)
+closeOpenOutput = cv2.morphologyEx(closeDowelsIm, cv2.MORPH_OPEN, diskSE)
+
+# plotting
+plt.figure(figsize=(10, 5)) # Figure 3
+plt.suptitle("Problem 1, Part 2a")
+plt.subplot(1, 2, 1)
+plt.imshow(openCloseOutput, cmap='gray')
+plt.axis("off")
+plt.title("Open-Close")
+
+plt.subplot(1, 2, 2)
+plt.imshow(closeOpenOutput, cmap='gray')
+plt.axis("off")
+plt.title("Close-Open")
+plt.tight_layout()
+
+# PROBLEM 1 QUESTION 2B - compare "open close" and "close open" on radius 2, 3, 4, and 5
 radiusList = [2, 3, 4, 5]
 res = [dowelsIm, dowelsIm] # close-open image, open-close image
 
@@ -101,32 +126,19 @@ for radius in radiusList:
     res.append(closeOpenOutput)
     res.append(openCloseOutput)
 
-
 # plotting
-plt.figure(figsize=(10, 5)) # Figure 3
-plt.suptitle("Problem 1, Part 3a: Open-Close")
+plt.figure(figsize=(10, 5)) # Figure 4
+plt.suptitle("Problem 1, Part 2b")
 plt.subplot(1, 2, 1)
-plt.imshow(dowelsIm, cmap='gray')
-plt.axis("off")
-plt.title("Original")
-
-plt.subplot(1, 2, 2)
 plt.imshow(res[1], cmap='gray')
 plt.axis("off")
 plt.title("Open-Close")
-plt.tight_layout()
-
-plt.figure(figsize=(10, 5)) # Figure 4
-plt.suptitle("Problem 1, Part 3b: Close-Open")
-plt.subplot(1, 2, 1)
-plt.imshow(dowelsIm, cmap='gray')
-plt.axis("off")
-plt.title("Original")
 
 plt.subplot(1, 2, 2)
 plt.imshow(res[0], cmap='gray')
 plt.axis("off")
 plt.title("Close-Open")
 plt.tight_layout()
+
 
 plt.show()
