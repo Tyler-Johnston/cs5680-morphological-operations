@@ -151,7 +151,7 @@ smallSquaresOutput = cv2.morphologyEx(smallSquaresIm, cv2.MORPH_HITMISS, structu
 foregroundPixelCount = np.sum(smallSquaresIm > 0)
 print("number of foreground pixels: ", foregroundPixelCount)
 
-plt.figure(figsize=(10, 5)) # Figure 4
+plt.figure(figsize=(10, 5)) # Figure 5
 plt.suptitle("Problem 1, Part 3: Foreground Pixels")
 plt.subplot(1, 2, 1)
 plt.imshow(smallSquaresIm, cmap='gray')
@@ -166,124 +166,103 @@ plt.tight_layout()
 
 # PROBLEM 2 QUESTION 1
 
-def extract_connected_components_intersection(im, B):
-    """Extract connected components from a binary image using intersection in the morphological method."""
+def FindComponentLabels(im, se):
     height, width = im.shape
-    label_counter = 1
-    labeled_image = np.zeros_like(im)
+    numberOfLabels = 0
+    labelIm = np.zeros_like(im)
     
-    # Convert binary image to boolean for easier operations
-    im_bool = im == 255
+    # convert binary image to boolean for easier operations
+    boolIm = im == 255
     
     for i in range(height):
         for j in range(width):
-            if im_bool[i, j]:  # If pixel is foreground
+            if boolIm[i, j]:
                 x0 = np.zeros((height, width), dtype=bool)
                 x0[i, j] = True
                 
                 while True:
-                    x1 = np.logical_and(cv2.dilate(x0.astype(np.uint8), B), im_bool)
+                    x1 = np.logical_and(cv2.dilate(x0.astype(np.uint8), se), boolIm)
                     if np.array_equal(x0, x1):
                         break
                     x0 = x1
                 
                 # Label the connected component and remove it from the image
-                labeled_image[x1] = label_counter
-                im_bool = np.logical_and(im_bool, np.logical_not(x1))
+                labelIm[x1] = numberOfLabels
+                boolIm = np.logical_and(boolIm, np.logical_not(x1))
                 
-                label_counter += 1
+                numberOfLabels += 1
                 
-    return labeled_image
+    return numberOfLabels, labelIm
 
-# Extract connected components using intersection
-labeled_image_intersection = extract_connected_components_intersection(ballIm, B_large)
+structureElement2 = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=np.uint8)
+numLabels, labeledIm = FindComponentLabels(ballIm, structureElement2)
 
-# Display the labeled image
-plt.figure(figsize=(8, 8))
-plt.imshow(labeled_image_intersection, cmap='nipy_spectral')
+print("my own num of labels: ", numLabels)
+
+plt.figure(figsize=(8, 8)) # Figure 6
+plt.suptitle("Problem 2, Part 1")
+plt.imshow(labeledIm, cmap='jet')
 plt.axis("off")
-plt.title("Labeled Image (Intersection Method)")
-plt.show()
-
-num_components_intersection = len(np.unique(labeled_image_intersection)) - 1  # Subtract 1 for background
-num_components_intersection
-
-
-# def FindComponentLabels(im, SE):
-#     # Initialize the labeled image with zeros (same size as the input image)
-#     labelIm = np.zeros_like(im, dtype=np.int32)
-    
-#     # Initialize label counter
-#     label_counter = 1
-    
-#     # Dictionary to store label equivalences
-#     equivalences = {}
-
-#     # First pass
-#     for i in range(1, im.shape[0]-1):
-#         for j in range(1, im.shape[1]-1):
-#             if im[i, j] == 255:  # If pixel is a foreground pixel
-#                 neighbors = im[i-1:i+2, j-1:j+2] * SE  # Extract neighbors using the structuring element
-#                 labeled_neighbors = labelIm[i-1:i+2, j-1:j+2]
-                
-#                 # If no labeled neighbors, assign a new label
-#                 if np.max(labeled_neighbors) == 0:
-#                     labelIm[i, j] = label_counter
-#                     label_counter += 1
-#                 else:
-#                     # Assign the smallest label among the neighbors
-#                     min_label = np.min(labeled_neighbors[labeled_neighbors > 0])
-#                     labelIm[i, j] = min_label
-                    
-#                     # Record label equivalences
-#                     for label in labeled_neighbors[labeled_neighbors > 0]:
-#                         if label != min_label:
-#                             equivalences[label] = min_label
-
-#     # Second pass: Resolve label equivalences
-#     for i in range(im.shape[0]):
-#         for j in range(im.shape[1]):
-#             if labelIm[i, j] > 0:
-#                 while labelIm[i, j] in equivalences:
-#                     labelIm[i, j] = equivalences[labelIm[i, j]]
-                
-#     # Number of unique components
-#     num = len(np.unique(labelIm)) - 1  # Subtract 1 for the background label (0)
-    
-#     return labelIm, num
-
-# # Define the 3x3 square structuring element for 8-connectivity
-# se = np.ones((3, 3), np.uint8)
-
-# # Call the FindComponentLabels function
-# labeled_image, num_components = FindComponentLabels(ballIm, se)
-
-# # Display the labeled image
-# plt.figure(figsize=(8, 8))
-# plt.imshow(labeled_image, cmap='nipy_spectral')
-# plt.axis("off")
-# plt.title("Labeled Image")
-# # plt.show()
-# print("number of connected by my own function: ", num_components - 1) # must subtract by 1 because it originally includes the background
-
-
-
-
-
-
-
+plt.title("Connected Components via FindComponentLabels")
 
 
 # PROBLEM 2 QUESTION 2
 builtinNumberOfLabels, builtinLabeledIm = cv2.connectedComponents(ballIm)
 
-plt.figure(figsize=(10, 5)) 
-plt.suptitle("Problem 2")
+print("number of connected by built-in function: ", builtinNumberOfLabels - 1) # must subtract by 1 because it originally includes the background
+
+plt.figure(figsize=(8, 8)) # Figure 7
+plt.suptitle("Problem 2, Part 2")
 plt.subplot(1, 1, 1)
 plt.imshow(builtinLabeledIm, cmap='jet')
 plt.axis("off")
-plt.title("Original")
+plt.title("Connected Components via Built-In")
 
-print("number of connected by built-in function: ", builtinNumberOfLabels - 1) # must subtract by 1 because it originally includes the background
+# PROBLEM 2 QUESTION 3
+
+def extract_border_connected_components(im, B):
+    """Extract and return connected components that reside on the border of the image."""
+    height, width = im.shape
+    border_image = np.zeros_like(im)
+    
+    # Define border regions: top row, bottom row, leftmost column, and rightmost column
+    top_row, bottom_row, left_col, right_col = 0, height-1, 0, width-1
+
+    # Use a set to keep track of labeled components to avoid redundancy
+    labeled_components = set()
+
+    for i in range(height):
+        for j in range(width):
+            # If the pixel is on the border and is a foreground pixel
+            if im[i, j] == 255 and (i == top_row or i == bottom_row or j == left_col or j == right_col):
+                # Extract the connected component for this pixel
+                numValues, component = FindComponentLabels(im, B)
+                
+                # Label the component if it's not already labeled
+                label = component[i, j]
+                if label not in labeled_components:
+                    labeled_components.add(label)
+                    border_image[component == label] = 255
+                    
+    return border_image
+
+# Extract border-connected components
+
+
+border_components_image = extract_border_connected_components(ballIm, structureElement2)
+
+# Display the original image and border components side by side
+fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+axes[0].imshow(ballIm, cmap='gray')
+axes[0].axis("off")
+axes[0].set_title("Original Image")
+
+axes[1].imshow(border_components_image, cmap='gray')
+axes[1].axis("off")
+axes[1].set_title("Border Connected Components")
+
+plt.tight_layout()
+
+
 
 plt.show()
