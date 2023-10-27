@@ -171,19 +171,27 @@ def FindComponentLabels(im, se):
     numberOfLabels = 0
     labelIm = np.zeros_like(im)
     
-    # convert binary image to boolean for easier operations
+    # convert binary image to boolean array for easier operations
     boolIm = im == 255
     
     for i in range(height):
         for j in range(width):
+            # check if the current pixel is part of a connected componenet 
             if boolIm[i, j]:
+                # create a mask such that the only true value is the current pixel
                 x0 = np.zeros((height, width), dtype=bool)
                 x0[i, j] = True
                 
+                # utilize a loop to grow the connected components
                 while True:
+                    # dilate the current mask using SE and intersect it with boolIm to get a new mask
                     x1 = np.logical_and(cv2.dilate(x0.astype(np.uint8), se), boolIm)
+
+                    # if x0 == x1 then the connected component has reached its max size so stop looping
                     if np.array_equal(x0, x1):
                         break
+
+                    # update x0 to be x1
                     x0 = x1
                 
                 # Label the connected component and remove it from the image
@@ -220,49 +228,86 @@ plt.title("Connected Components via Built-In")
 
 # PROBLEM 2 QUESTION 3
 
-def extract_border_connected_components(im, B):
-    """Extract and return connected components that reside on the border of the image."""
-    height, width = im.shape
-    border_image = np.zeros_like(im)
-    
-    # Define border regions: top row, bottom row, leftmost column, and rightmost column
-    top_row, bottom_row, left_col, right_col = 0, height-1, 0, width-1
+def FindBorderConnectedComponents(labelIm):
+    height, width = labelIm.shape
+    A = np.zeros_like(labelIm)
+    borderConnectedComponents = set()
 
-    # Use a set to keep track of labeled components to avoid redundancy
-    labeled_components = set()
-
+    # iterate through the border of the image and collect unique labels
     for i in range(height):
         for j in range(width):
-            # If the pixel is on the border and is a foreground pixel
-            if im[i, j] == 255 and (i == top_row or i == bottom_row or j == left_col or j == right_col):
-                # Extract the connected component for this pixel
-                numValues, component = FindComponentLabels(im, B)
-                
-                # Label the component if it's not already labeled
-                label = component[i, j]
-                if label not in labeled_components:
-                    labeled_components.add(label)
-                    border_image[component == label] = 255
-                    
-    return border_image
+            if i == 0 or i == height - 1 or j == 0 or j == width - 1:
+                label = labelIm[i, j]
+                if label > 0:
+                    borderConnectedComponents.add(label)
 
-# Extract border-connected components
+    # create the image A with only border-connected components
+    for i in range(height):
+        for j in range(width):
+            label = labelIm[i, j]
+            if label in borderConnectedComponents:
+                A[i, j] = label
 
+    return len(borderConnectedComponents), A
 
-border_components_image = extract_border_connected_components(ballIm, structureElement2)
+numberBorderComponents, A = FindBorderConnectedComponents(labeledIm)
+print("number of border components: ", numberBorderComponents)
 
-# Display the original image and border components side by side
-fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-axes[0].imshow(ballIm, cmap='gray')
-axes[0].axis("off")
-axes[0].set_title("Original Image")
+# plotting
+plt.figure(figsize=(10, 5)) # Figure 8
+plt.suptitle("t")
+plt.subplot(1, 2, 1)
+plt.imshow(labeledIm, cmap='jet')
+plt.axis("off")
+plt.title("Original")
 
-axes[1].imshow(border_components_image, cmap='gray')
-axes[1].axis("off")
-axes[1].set_title("Border Connected Components")
-
+plt.subplot(1, 2, 2)
+plt.imshow(A, cmap='jet')
+plt.axis("off")
+plt.title("Result")
 plt.tight_layout()
 
+# PROBLEM 3 QUESTION 4
 
+def FindNonBorderConnectedComponents(labelIm):
+    height, width = labelIm.shape
+    B = np.zeros_like(labelIm)
+    borderConnectedComponents = set()
+    nonBorderComponents = set()
+
+    # iterate through the border of the image and collect unique labels
+    for i in range(height):
+        for j in range(width):
+            if i == 0 or i == height - 1 or j == 0 or j == width - 1:
+                label = labelIm[i, j]
+                if label > 0:
+                    borderConnectedComponents.add(label)
+
+    # create the image B with only non-border connected components
+    for i in range(height):
+        for j in range(width):
+            label = labelIm[i, j]
+            if label > 0 and label not in borderConnectedComponents:
+                B[i, j] = label
+                nonBorderComponents.add(label)
+
+    return len(nonBorderComponents), B
+
+numberNonBorderComponents, B = FindNonBorderConnectedComponents(labeledIm)
+print("number of nonborder components: ", numberNonBorderComponents)
+
+# plotting
+plt.figure(figsize=(10, 5)) # Figure 8
+plt.suptitle("t")
+plt.subplot(1, 2, 1)
+plt.imshow(labeledIm, cmap='jet')
+plt.axis("off")
+plt.title("Original")
+
+plt.subplot(1, 2, 2)
+plt.imshow(B, cmap='jet')
+plt.axis("off")
+plt.title("Result")
+plt.tight_layout()
 
 plt.show()
