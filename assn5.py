@@ -268,49 +268,88 @@ plt.tight_layout()
 
 # PROBLEM 3 QUESTION 4
 
-# def FindNonBorderOverlappingComponents(labelIm, borderComponents):
-#     pass
+def getNonBorderIm(labelIm, borderComponents):
+    height, width = labelIm.shape
+    nonBorderComponents = set()
 
-#  Find connected components using built-in function
-num_labels, labeled_image = cv2.connectedComponents(ballIm)
+    for i in range(height):
+        for j in range(width):
+            label = labelIm[i, j]
+            if label > 0 and label not in borderComponents:
+                nonBorderComponents.add(label)
 
-# Step 1 & 2: Find all connected components and filter out those that touch the border
-height, width = labeled_image.shape
-border_labels = set()
-for i in range(width):
-    border_labels.add(labeled_image[0, i])
-    border_labels.add(labeled_image[height-1, i])
-for j in range(height):
-    border_labels.add(labeled_image[j, 0])
-    border_labels.add(labeled_image[j, width-1])
+    nonBorderIm = np.zeros((height, width))
+    for i in range(height):
+        for j in range(width):
+            label = labelIm[i, j]
+            if label in nonBorderComponents:
+                nonBorderIm[i,j] = label
+    
+    return nonBorderIm
 
-non_border_components = np.copy(labeled_image)
-for label in border_labels:
-    non_border_components[labeled_image == label] = 0
 
-# Convert non-border components back to binary for further processing
-binary_non_border = (non_border_components > 0).astype(np.uint8) * 255
+def FindNonBorderOverlappingComponents(labelIm):
+    
+    nonBorderIm = getNonBorderIm(labelIm, borderComponents)
+    nonBorderIm = (nonBorderIm > 0).astype(np.uint8) * 255
+    # Estimate the size of a single particle
+    _, non_border_labels = cv2.connectedComponents(nonBorderIm)
+    unique_labels, counts = np.unique(non_border_labels, return_counts=True)
+    unique_labels = unique_labels[1:]  # Excluding the background label
+    counts = counts[1:]
+    single_particle_size = np.min(counts)
 
-# Estimate the size of a single particle
-_, non_border_labels = cv2.connectedComponents(binary_non_border)
-unique_labels, counts = np.unique(non_border_labels, return_counts=True)
-unique_labels = unique_labels[1:]  # Excluding the background label
-counts = counts[1:]
-single_particle_size = np.min(counts)
+    # Create a mask for overlapping particles
+    overlapping_particles = np.zeros_like(nonBorderIm)
+    threshold = 0.2 * single_particle_size
 
-# Create a mask for overlapping particles
-overlapping_particles = np.zeros_like(binary_non_border)
-threshold = 0.2 * single_particle_size
+    for label, count in zip(unique_labels, counts):
+        if count > single_particle_size + threshold:
+            overlapping_particles[non_border_labels == label] = 255
+    return overlapping_particles
 
-for label, count in zip(unique_labels, counts):
-    if count > single_particle_size + threshold:
-        overlapping_particles[non_border_labels == label] = 255
+overlapping_particles = FindNonBorderOverlappingComponents(labeledIm)
+    
 
-# # Use your borderComponents to exclude components that touch the border
+# FindNonBorderOverlappingComponents(labeledIm, borderComponents)
+    
+
+# #  Find connected components using built-in function
+# num_labels, labeled_image = cv2.connectedComponents(ballIm)
+
+# # Step 1 & 2: Find all connected components and filter out those that touch the border
+# height, width = labeled_image.shape
+# border_labels = set()
+# for i in range(width):
+#     border_labels.add(labeled_image[0, i])
+#     border_labels.add(labeled_image[height-1, i])
+# for j in range(height):
+#     border_labels.add(labeled_image[j, 0])
+#     border_labels.add(labeled_image[j, width-1])
+
+# non_border_components = np.copy(labeled_image)
+# for label in border_labels:
+#     non_border_components[labeled_image == label] = 0
+
+# print(non_border_components)
+
+# # Convert non-border components back to binary for further processing
+# binary_non_border = (non_border_components > 0).astype(np.uint8) * 255
+
+# # Estimate the size of a single particle
+# _, non_border_labels = cv2.connectedComponents(binary_non_border)
+# unique_labels, counts = np.unique(non_border_labels, return_counts=True)
+# unique_labels = unique_labels[1:]  # Excluding the background label
+# counts = counts[1:]
+# single_particle_size = np.min(counts)
+
+# # Create a mask for overlapping particles
+# overlapping_particles = np.zeros_like(binary_non_border)
+# threshold = 0.2 * single_particle_size
+
 # for label, count in zip(unique_labels, counts):
-#     if label not in borderComponents:
-#         if count > single_particle_size + threshold:
-#             overlapping_particles[non_border_labels == label] = 255
+#     if count > single_particle_size + threshold:
+#         overlapping_particles[non_border_labels == label] = 255
 
 # Display the overlapping particles
 plt.figure(figsize=(12, 6))
