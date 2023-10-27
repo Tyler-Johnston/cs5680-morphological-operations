@@ -209,10 +209,9 @@ print("my own num of labels: ", numLabels)
 
 plt.figure(figsize=(8, 8)) # Figure 6
 plt.suptitle("Problem 2, Part 1")
-plt.imshow(labeledIm, cmap='jet')
+plt.imshow(labeledIm, cmap='gray')
 plt.axis("off")
 plt.title("Connected Components via FindComponentLabels")
-
 
 # PROBLEM 2 QUESTION 2
 builtinNumberOfLabels, builtinLabeledIm = cv2.connectedComponents(ballIm)
@@ -222,7 +221,7 @@ print("number of connected by built-in function: ", builtinNumberOfLabels - 1) #
 plt.figure(figsize=(8, 8)) # Figure 7
 plt.suptitle("Problem 2, Part 2")
 plt.subplot(1, 1, 1)
-plt.imshow(builtinLabeledIm, cmap='jet')
+plt.imshow(builtinLabeledIm, cmap='gray')
 plt.axis("off")
 plt.title("Connected Components via Built-In")
 
@@ -233,7 +232,7 @@ def FindBorderConnectedComponents(labelIm):
     A = np.zeros_like(labelIm)
     borderConnectedComponents = set()
 
-    # iterate through the border of the image and collect unique labels
+    # iterate through the border of the image and get the labels
     for i in range(height):
         for j in range(width):
             if i == 0 or i == height - 1 or j == 0 or j == width - 1:
@@ -248,66 +247,85 @@ def FindBorderConnectedComponents(labelIm):
             if label in borderConnectedComponents:
                 A[i, j] = label
 
-    return len(borderConnectedComponents), A
+    return len(borderConnectedComponents), A, borderConnectedComponents
 
-numberBorderComponents, A = FindBorderConnectedComponents(labeledIm)
+numberBorderComponents, A, borderComponents = FindBorderConnectedComponents(labeledIm)
 print("number of border components: ", numberBorderComponents)
 
 # plotting
 plt.figure(figsize=(10, 5)) # Figure 8
 plt.suptitle("t")
 plt.subplot(1, 2, 1)
-plt.imshow(labeledIm, cmap='jet')
+plt.imshow(labeledIm, cmap='gray')
 plt.axis("off")
 plt.title("Original")
 
 plt.subplot(1, 2, 2)
-plt.imshow(A, cmap='jet')
+plt.imshow(A, cmap='gray')
 plt.axis("off")
 plt.title("Result")
 plt.tight_layout()
 
 # PROBLEM 3 QUESTION 4
 
-def FindNonBorderConnectedComponents(labelIm):
-    height, width = labelIm.shape
-    B = np.zeros_like(labelIm)
-    borderConnectedComponents = set()
-    nonBorderComponents = set()
+# def FindNonBorderOverlappingComponents(labelIm, borderComponents):
+#     pass
 
-    # iterate through the border of the image and collect unique labels
-    for i in range(height):
-        for j in range(width):
-            if i == 0 or i == height - 1 or j == 0 or j == width - 1:
-                label = labelIm[i, j]
-                if label > 0:
-                    borderConnectedComponents.add(label)
+#  Find connected components using built-in function
+num_labels, labeled_image = cv2.connectedComponents(ballIm)
 
-    # create the image B with only non-border connected components
-    for i in range(height):
-        for j in range(width):
-            label = labelIm[i, j]
-            if label > 0 and label not in borderConnectedComponents:
-                B[i, j] = label
-                nonBorderComponents.add(label)
+# Step 1 & 2: Find all connected components and filter out those that touch the border
+height, width = labeled_image.shape
+border_labels = set()
+for i in range(width):
+    border_labels.add(labeled_image[0, i])
+    border_labels.add(labeled_image[height-1, i])
+for j in range(height):
+    border_labels.add(labeled_image[j, 0])
+    border_labels.add(labeled_image[j, width-1])
 
-    return len(nonBorderComponents), B
+non_border_components = np.copy(labeled_image)
+for label in border_labels:
+    non_border_components[labeled_image == label] = 0
 
-numberNonBorderComponents, B = FindNonBorderConnectedComponents(labeledIm)
-print("number of nonborder components: ", numberNonBorderComponents)
+# Convert non-border components back to binary for further processing
+binary_non_border = (non_border_components > 0).astype(np.uint8) * 255
 
-# plotting
-plt.figure(figsize=(10, 5)) # Figure 8
-plt.suptitle("t")
+# Estimate the size of a single particle
+_, non_border_labels = cv2.connectedComponents(binary_non_border)
+unique_labels, counts = np.unique(non_border_labels, return_counts=True)
+unique_labels = unique_labels[1:]  # Excluding the background label
+counts = counts[1:]
+single_particle_size = np.min(counts)
+
+# Create a mask for overlapping particles
+overlapping_particles = np.zeros_like(binary_non_border)
+threshold = 0.2 * single_particle_size
+
+for label, count in zip(unique_labels, counts):
+    if count > single_particle_size + threshold:
+        overlapping_particles[non_border_labels == label] = 255
+
+# # Use your borderComponents to exclude components that touch the border
+# for label, count in zip(unique_labels, counts):
+#     if label not in borderComponents:
+#         if count > single_particle_size + threshold:
+#             overlapping_particles[non_border_labels == label] = 255
+
+# Display the overlapping particles
+plt.figure(figsize=(12, 6))
 plt.subplot(1, 2, 1)
-plt.imshow(labeledIm, cmap='jet')
-plt.axis("off")
-plt.title("Original")
+plt.imshow(ballIm, cmap='gray')
+plt.title('Original Image')
+plt.axis('off')
 
 plt.subplot(1, 2, 2)
-plt.imshow(B, cmap='jet')
-plt.axis("off")
-plt.title("Result")
-plt.tight_layout()
+plt.imshow(overlapping_particles, cmap='gray')
+plt.title('Overlapping Particles')
+plt.axis('off')
 
+plt.tight_layout()
 plt.show()
+
+
+# plt.show()
