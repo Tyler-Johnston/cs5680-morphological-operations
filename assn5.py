@@ -209,7 +209,7 @@ print("my own num of labels: ", numLabels)
 
 plt.figure(figsize=(8, 8)) # Figure 6
 plt.suptitle("Problem 2, Part 1")
-plt.imshow(labeledIm, cmap='jet')
+plt.imshow(labeledIm, cmap='gray')
 plt.axis("off")
 plt.title("Connected Components via FindComponentLabels")
 
@@ -221,7 +221,7 @@ print("number of connected by built-in function: ", builtinNumberOfLabels - 1) #
 plt.figure(figsize=(8, 8)) # Figure 7
 plt.suptitle("Problem 2, Part 2")
 plt.subplot(1, 1, 1)
-plt.imshow(builtinLabeledIm, cmap='jet')
+plt.imshow(builtinLabeledIm, cmap='gray')
 plt.axis("off")
 plt.title("Connected Components via Built-In")
 
@@ -270,28 +270,32 @@ plt.tight_layout()
 
 # PROBLEM 3 QUESTION 4
 
-def getNonBorderIm(labelIm, borderComponents):
+def convertComponentSet(labelIm, componentsSet, exclude=True):
     height, width = labelIm.shape
-    nonBorderComponents = set()
+    newComponentsSet = set()
 
     for i in range(height):
         for j in range(width):
             label = labelIm[i, j]
-            if label > 0 and label not in borderComponents:
-                nonBorderComponents.add(label)
+            if exclude:
+                if label > 0 and label not in componentsSet:
+                    newComponentsSet.add(label)
+            else:
+                if label > 0 and label in componentsSet:
+                    newComponentsSet.add(label)
 
-    nonBorderIm = np.zeros((height, width))
+    newIm = np.zeros((height, width))
     for i in range(height):
         for j in range(width):
             label = labelIm[i, j]
-            if label in nonBorderComponents:
-                nonBorderIm[i,j] = label
+            if label in newComponentsSet:
+                newIm[i,j] = label
     
-    return nonBorderIm
+    return newIm
 
 def FindNonBorderOverlappingComponents(labelIm):
     
-    nonBorderIm = getNonBorderIm(labelIm, borderComponents)
+    nonBorderIm = convertComponentSet(labelIm, borderComponents, exclude=True)
     nonBorderIm = (nonBorderIm > 0).astype(np.uint8) * 255
     
     # get the size of a single component
@@ -328,4 +332,47 @@ plt.imshow(B, cmap='gray')
 plt.title('Result')
 plt.axis('off')
 plt.tight_layout()
+
+# PROBLEM 3 QUESTION 5
+
+def RevisedPartiallyVisibleBorderComponentsV3(labelIm):
+
+    # extract the components which are touching the borders
+    borderIm = convertComponentSet(labelIm, borderComponents, exclude=False)
+    borderIm = (borderIm > 0).astype(np.uint8) * 255
+    
+    _, newLabeledIm = FindComponentLabels(borderIm, structureElement2)
+    
+    # get the sizes of the components
+    uniqueLabels, counts = np.unique(newLabeledIm, return_counts=True)
+    uniqueLabels = uniqueLabels[1:]  # exclude the background label
+    counts = counts[1:]
+    
+    threshold = np.percentile(counts, 35)
+    
+    # Create a mask for the partially visible components
+    C = np.zeros_like(borderIm)
+    for label, count in zip(uniqueLabels, counts):
+        if count < threshold:
+            C[newLabeledIm == label] = 255
+
+    numPartialComponents = len([label for label in uniqueLabels if counts[label - 1] > threshold])
+    return numPartialComponents, C
+
+num, C_revised_v3 = RevisedPartiallyVisibleBorderComponentsV3(builtinLabeledIm)
+print("number of border partial components: ", num)
+
+# Plotting the result
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+plt.imshow(ballIm, cmap='gray')
+plt.title('Original Image')
+plt.axis('off')
+
+plt.subplot(1, 2, 2)
+plt.imshow(C_revised_v3, cmap='gray')
+plt.title('Revised Result (V3)')
+plt.axis('off')
+plt.tight_layout()
+
 plt.show()
