@@ -335,7 +335,7 @@ plt.tight_layout()
 
 # PROBLEM 3 QUESTION 5
 
-def RevisedPartiallyVisibleBorderComponentsV3(labelIm):
+def PartiallyVisibleBorderComponents(labelIm):
 
     # extract the components which are touching the borders
     borderIm = convertComponentSet(labelIm, borderComponents, exclude=False)
@@ -348,9 +348,9 @@ def RevisedPartiallyVisibleBorderComponentsV3(labelIm):
     uniqueLabels = uniqueLabels[1:]  # exclude the background label
     counts = counts[1:]
     
-    threshold = np.percentile(counts, 35)
+    threshold = np.percentile(counts, 40)
     
-    # Create a mask for the partially visible components
+    # create a mask for the partially visible components
     C = np.zeros_like(borderIm)
     for label, count in zip(uniqueLabels, counts):
         if count < threshold:
@@ -359,19 +359,20 @@ def RevisedPartiallyVisibleBorderComponentsV3(labelIm):
     numPartialComponents = len([label for label in uniqueLabels if counts[label - 1] > threshold])
     return numPartialComponents, C
 
-num, C_revised_v3 = RevisedPartiallyVisibleBorderComponentsV3(builtinLabeledIm)
+num, C = PartiallyVisibleBorderComponents(builtinLabeledIm)
 print("number of border partial components: ", num)
 
 # Plotting the result
 plt.figure(figsize=(10, 5))
+plt.suptitle("Partially Visible Border Components")
 plt.subplot(1, 2, 1)
 plt.imshow(ballIm, cmap='gray')
 plt.title('Original Image')
 plt.axis('off')
 
 plt.subplot(1, 2, 2)
-plt.imshow(C_revised_v3, cmap='gray')
-plt.title('Revised Result (V3)')
+plt.imshow(C, cmap='gray')
+plt.title('Result')
 plt.axis('off')
 plt.tight_layout()
 
