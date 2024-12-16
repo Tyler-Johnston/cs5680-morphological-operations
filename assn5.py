@@ -268,7 +268,7 @@ plt.axis("off")
 plt.title("Result")
 plt.tight_layout()
 
-# PROBLEM 3 QUESTION 4
+# PROBLEM 2 QUESTION 4
 
 def convertComponentSet(labelIm, componentsSet, exclude=True):
     height, width = labelIm.shape
@@ -333,7 +333,7 @@ plt.title('Result')
 plt.axis('off')
 plt.tight_layout()
 
-# PROBLEM 3 QUESTION 5
+# PROBLEM 2 QUESTION 5
 
 def PartiallyVisibleBorderComponents(labelIm):
 
